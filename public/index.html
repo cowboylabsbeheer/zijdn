@@ -1,0 +1,727 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ZIJDN | Stage management en artist handling</title>
+<meta name="description" content="ZIJDN is het bedrijf van Floor van der Zijden: stage management en artist handling voor festivals, clubs en concerten.">
+<meta property="og:title" content="ZIJDN | Stage management en artist handling">
+<meta property="og:description" content="Jij zorgt voor de line-up, ik zorg dat het achter de schermen op rolletjes loopt.">
+<meta property="og:image" content="https://zijdn.nl/floor.jpg">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#ffd6ec">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🪩</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=DotGothic16&family=Shrikhand&display=swap" rel="stylesheet">
+<style>
+:root{
+  --blush:#ffd6ec; --hot:#ff2d95; --plum:#3a0634; --night:#1d0520;
+  --uv:#8a4dff; --amber:#ffb341;
+  --bg:var(--blush); --ink:var(--plum);
+  --display:"Shrikhand","Cooper Black",Georgia,serif;
+  --sans:"Bricolage Grotesque",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --led:"DotGothic16",ui-monospace,monospace;
+  --gutter:clamp(1.1rem,4vw,2.75rem);
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:1.0625rem;line-height:1.6;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+a{color:inherit}
+:focus-visible{outline:3px solid var(--hot);outline-offset:3px;border-radius:6px}
+img{max-width:100%}
+
+#spots{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
+main{position:relative;z-index:1;overflow-x:clip}
+
+/* ---------- nav ---------- */
+.nav{position:fixed;inset:0 0 auto 0;z-index:10;display:flex;align-items:center;justify-content:space-between;padding:.85rem var(--gutter);
+  background:color-mix(in srgb,var(--bg) 72%,transparent);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+.logo{font-family:var(--display);font-size:1.55rem;line-height:1;text-decoration:none;color:var(--ink)}
+.nav ul{display:flex;align-items:center;gap:clamp(1rem,2.4vw,2rem);list-style:none;margin:0;padding:0}
+.nav a{text-decoration:none;font-weight:600}
+.nav a:hover{color:var(--hot)}
+.nav .pill{background:var(--ink);color:var(--bg);padding:.5rem 1.05rem;border-radius:999px}
+.nav .pill:hover{background:var(--hot);color:var(--plum)}
+
+/* ---------- disco ball rig ---------- */
+.rig{position:fixed;top:0;left:0;z-index:6;pointer-events:none;transform-origin:0 0;will-change:transform}
+.string{position:absolute;top:0;left:-1px;width:2px;background:var(--ink);opacity:.5}
+.ball{position:absolute;top:0;padding:0;margin:0;border:0;background:none;cursor:pointer;pointer-events:auto;transform-origin:50% 0;border-radius:50%;-webkit-tap-highlight-color:transparent}
+.ball canvas{display:block;width:100%;height:100%}
+
+/* ---------- show clock ---------- */
+.clock{position:fixed;left:var(--gutter);bottom:clamp(.8rem,2.2vw,1.5rem);z-index:9;display:flex;align-items:baseline;gap:.65rem;
+  background:#160315;color:var(--amber);font-family:var(--led);border-radius:12px;padding:.4rem .85rem .45rem;
+  box-shadow:0 10px 30px -8px rgba(29,5,32,.55),inset 0 0 0 1px rgba(255,179,65,.22);pointer-events:none}
+.clock-time{font-size:1.4rem;letter-spacing:.06em;text-shadow:0 0 10px rgba(255,179,65,.75)}
+.clock-phase{font-size:.85rem;color:#ffd9a3}
+
+/* ---------- shared ---------- */
+.section{position:relative;padding:clamp(6rem,15vh,10rem) var(--gutter)}
+.wrap{max-width:1180px;margin:0 auto}
+h2{font-weight:800;font-size:clamp(2.3rem,5.6vw,4.7rem);line-height:.98;letter-spacing:-.035em;margin:0 0 1.4rem;max-width:15ch}
+.intro{font-size:clamp(1.1rem,1.5vw,1.3rem);max-width:48ch;margin:0}
+[data-p]{--p:1;--e:1}
+section[id]{scroll-margin-top:4rem}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;padding:.9rem 1.55rem;border-radius:999px;border:2px solid var(--plum);
+  font:inherit;font-weight:700;font-size:1rem;line-height:1.2;text-decoration:none;cursor:pointer;transition:transform .18s ease,box-shadow .18s ease,background .18s}
+.btn-hot{background:var(--hot);color:var(--plum);box-shadow:4px 4px 0 var(--plum)}
+.btn-hot:hover{transform:translate(-2px,-2px);box-shadow:6px 6px 0 var(--plum)}
+.btn-hot:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--plum)}
+.btn-line{background:transparent;color:var(--plum)}
+.btn-line:hover{background:#fff}
+
+/* ---------- hero ---------- */
+.hero{height:175vh;position:relative}
+.hero-stage{position:sticky;top:0;height:100vh;height:100svh;display:flex;flex-direction:column;justify-content:flex-end;
+  padding:0 var(--gutter) clamp(4.5rem,11vh,6.5rem);overflow:hidden}
+.wordmark{display:flex;font-family:var(--display);font-weight:400;font-size:clamp(6rem,25vw,23rem);line-height:.82;margin:0 0 .12em -.03em;color:var(--hot)}
+.wordmark span{display:inline-block;will-change:transform;
+  text-shadow:.012em .012em 0 var(--plum),.024em .024em 0 var(--plum),.036em .036em 0 var(--plum),.048em .048em 0 var(--plum);
+  transform:translate(calc(var(--dx) * var(--pp,0) * 1vw),calc(var(--dy) * var(--pp,0) * 1vh)) rotate(calc(var(--r) * var(--pp,0) * 1deg)) scale(calc(1 + var(--pp,0) * .35))}
+.hero-copy{display:flex;align-items:flex-end;justify-content:space-between;gap:1.5rem 3rem;flex-wrap:wrap;
+  opacity:calc(1 - var(--pp,0) * 2.2);transform:translateY(calc(var(--pp,0) * -6vh))}
+.lede{margin:0;max-width:31ch;font-size:clamp(1.15rem,1.75vw,1.5rem);line-height:1.35;font-weight:600}
+.btns{display:flex;flex-wrap:wrap;gap:.75rem}
+.scroll-hint{position:absolute;left:50%;bottom:1.1rem;transform:translateX(-50%);margin:0;font-size:.9rem;font-weight:600;white-space:nowrap;
+  opacity:calc(.75 - var(--pp,0) * 4)}
+.scroll-hint span{display:inline-block;animation:nudge 1.6s ease-in-out infinite}
+@keyframes nudge{50%{transform:translateY(4px)}}
+
+/* ---------- services / passes ---------- */
+.services .wrap{text-align:left}
+.passes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:clamp(2.5rem,7vw,7rem);max-width:860px;margin:clamp(9rem,30vh,15rem) auto 0}
+.pass-holder{position:relative;--swing:-22deg;opacity:min(1,calc(var(--p) * 3));
+  transform:translateY(calc((1 - var(--e)) * -75vh)) rotate(calc((1 - var(--e)) * var(--swing)));transform-origin:50% -30vh}
+.pass-holder:nth-child(2){--swing:18deg;margin-top:4rem}
+.strap{position:absolute;left:50%;bottom:calc(100% - 14px);width:30px;height:clamp(9rem,32vh,16rem);transform:translateX(-50%);
+  background:var(--strap);border-radius:3px 3px 0 0;overflow:hidden;
+  -webkit-mask-image:linear-gradient(to top,#000 55%,transparent);mask-image:linear-gradient(to top,#000 55%,transparent)}
+.strap::before{content:"ZIJDN ZIJDN ZIJDN ZIJDN ZIJDN ZIJDN";position:absolute;left:50%;bottom:6px;writing-mode:vertical-rl;transform:translateX(-50%) rotate(180deg);
+  font-family:var(--display);font-size:.8rem;letter-spacing:.12em;color:var(--strap-ink);white-space:nowrap}
+.clip{position:absolute;left:50%;top:-14px;width:24px;height:30px;transform:translateX(-50%);border-radius:6px 6px 10px 10px;
+  background:linear-gradient(90deg,#9a8ea6,#f4eff8 45%,#b4a8c0);box-shadow:0 2px 3px rgba(0,0,0,.25);z-index:2}
+.pass{position:relative;background:linear-gradient(165deg,#fff 0%,#fff3fa 55%,#ffe2f2 100%);color:var(--plum);border-radius:22px;overflow:hidden;
+  padding-bottom:1.5rem;box-shadow:0 34px 60px -24px rgba(58,6,52,.55),inset 0 0 0 1px rgba(255,255,255,.9)}
+.pass::after{content:"";position:absolute;inset:-20%;pointer-events:none;
+  background:linear-gradient(115deg,transparent 38%,rgba(255,255,255,.75) 47%,rgba(255,255,255,0) 56%);
+  transform:translateX(calc((var(--p) - .45) * 140%))}
+.slot{display:block;width:58px;height:11px;margin:1.1rem auto .9rem;border-radius:6px;background:rgba(58,6,52,.16);box-shadow:inset 0 2px 3px rgba(58,6,52,.25)}
+.pass-head{background:var(--tone);color:var(--tone-ink);padding:1.1rem 1.5rem 1rem;display:flex;align-items:flex-end;justify-content:space-between;gap:1rem}
+.aaa{font-family:var(--display);font-size:clamp(3rem,6vw,4.4rem);line-height:.85}
+.pass-head small{font-weight:700;font-size:.95rem;text-align:right;line-height:1.2}
+.pass h3{font-size:clamp(1.7rem,2.6vw,2.1rem);line-height:1.02;letter-spacing:-.025em;font-weight:800;margin:1.25rem 1.5rem .5rem}
+.pass-desc{margin:0 1.5rem .8rem;font-size:1rem}
+.pass ul{margin:0 1.5rem;padding:0;list-style:none;font-size:.98rem;line-height:1.45}
+.pass li{position:relative;padding-left:1.35rem;margin:.4rem 0}
+.pass li::before{content:"✦";position:absolute;left:0;top:0;color:var(--hot)}
+.barcode{height:42px;margin:1.4rem 1.5rem .35rem;
+  background:repeating-linear-gradient(90deg,var(--plum) 0 2px,transparent 2px 4px,var(--plum) 4px 7px,transparent 7px 9px,var(--plum) 9px 10px,transparent 10px 13px,var(--plum) 13px 16px,transparent 16px 17px)}
+.pass-name{margin:0 1.5rem;font-family:var(--led);font-size:.85rem}
+
+/* ---------- statement (lights down) ---------- */
+.statement{height:290vh;position:relative}
+.statement-stage{position:sticky;top:0;height:100vh;height:100svh;display:grid;place-items:center;padding:6rem var(--gutter) 4rem}
+.statement p{margin:0;max-width:21ch;font-weight:800;font-size:clamp(2rem,5vw,4.5rem);line-height:1.06;letter-spacing:-.03em}
+.statement .w{opacity:.14}
+
+/* ---------- ADE ---------- */
+.ade{isolation:isolate;padding-bottom:clamp(7rem,18vh,12rem)}
+.lasers{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:-1;
+  -webkit-mask-image:linear-gradient(to bottom,transparent,#000 12%,#000 70%,transparent);mask-image:linear-gradient(to bottom,transparent,#000 12%,#000 70%,transparent)}
+.lasers::before{content:"";position:absolute;left:50%;bottom:-25%;width:140%;height:70%;transform:translateX(-50%);
+  background:radial-gradient(closest-side,rgba(255,45,149,.38),rgba(138,77,255,.12) 55%,transparent)}
+.beam{position:absolute;left:50%;bottom:-8%;width:4px;height:160vh;transform-origin:50% 100%;
+  background:linear-gradient(to top,var(--c),transparent 80%);filter:blur(1.4px);opacity:.6;mix-blend-mode:screen;
+  transform:translateX(-50%) rotate(calc(var(--a) + var(--p) * var(--s)))}
+.ade-title{font-family:var(--display);font-weight:400;font-size:clamp(5rem,17vw,15rem);line-height:.88;margin:0 0 2rem;letter-spacing:0;max-width:none;
+  background:linear-gradient(180deg,#fff 0%,#f6d9ff 22%,#b9a6cc 46%,#fff 50%,#ffb3dc 64%,#ff2d95 100%);background-size:100% 220%;
+  background-position:50% calc(var(--p) * 100%);-webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 0 30px rgba(255,45,149,.35))}
+.runlist{list-style:none;margin:clamp(3rem,8vh,5rem) 0 0;padding:0;border-top:1px solid rgba(255,230,244,.22)}
+.run{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:.35rem 2rem;padding:1.5rem 0;border-bottom:1px solid rgba(255,230,244,.22);
+  opacity:calc(.2 + .8 * var(--e));transform:translateX(calc((1 - var(--e)) * 8vw))}
+.run-act{font-weight:800;font-size:clamp(1.55rem,3.7vw,3.1rem);line-height:1.05;letter-spacing:-.025em}
+.run-venue{font-family:var(--led);color:var(--amber);font-size:clamp(1rem,1.6vw,1.3rem);text-shadow:0 0 14px rgba(255,179,65,calc(var(--e) * .85))}
+
+/* ---------- about ---------- */
+.about-grid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:clamp(3rem,7vw,7rem);align-items:center}
+.photo{position:relative;margin:0;transform:translateY(calc((.5 - var(--p)) * 110px)) rotate(calc(-6deg + var(--p) * 8deg))}
+.photo img{display:block;width:100%;height:auto;aspect-ratio:4/5;object-fit:cover;object-position:50% 56%;border-radius:20px;border:7px solid #fff;
+  box-shadow:0 40px 90px -30px rgba(255,45,149,.6)}
+.sticker{position:absolute;right:-1.1rem;top:-1.3rem;width:7.6rem;height:7.6rem;border-radius:50%;display:grid;place-items:center;text-align:center;
+  background:var(--hot);color:var(--plum);font-family:var(--display);font-size:1.05rem;line-height:1.05;box-shadow:3px 3px 0 var(--plum);
+  transform:rotate(calc(-18deg + var(--p) * 46deg))}
+.about-text p{max-width:46ch;font-size:clamp(1.05rem,1.35vw,1.2rem)}
+.about-text .aside{font-weight:700;color:#ff8fca}
+
+/* ---------- contact ---------- */
+.contact-grid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);gap:clamp(2.5rem,6vw,6rem);align-items:start}
+.direct{margin-top:2.2rem}
+.direct p{margin:0 0 .3rem;font-weight:600}
+.mail{display:inline-block;font-family:var(--display);font-size:clamp(1.7rem,3.4vw,2.6rem);line-height:1.1;text-decoration:none;
+  background:linear-gradient(var(--hot),var(--hot)) 0 92%/100% .18em no-repeat;transition:background-size .2s}
+.mail:hover{background-size:100% .5em}
+.social{margin-top:1.1rem;font-weight:700}
+.form-card{position:relative;background:#fff8fc;color:var(--plum);border:2px solid var(--plum);border-radius:26px;padding:clamp(1.4rem,3vw,2.4rem);
+  box-shadow:10px 10px 0 var(--plum)}
+fieldset{border:0;margin:0 0 1.3rem;padding:0;min-width:0}
+legend,label{display:block;font-weight:700;font-size:.97rem;margin-bottom:.45rem;padding:0}
+.opt{font-weight:400;opacity:.7}
+.chips{display:flex;flex-wrap:wrap;gap:.5rem}
+.chip{position:relative;margin:0}
+.chip input{position:absolute;opacity:0;width:1px;height:1px}
+.chip span{display:inline-block;padding:.5rem 1rem;border:2px solid var(--plum);border-radius:999px;font-weight:600;font-size:.95rem;cursor:pointer;transition:background .15s,transform .15s}
+.chip span:hover{background:#ffe3f2}
+.chip input:checked + span{background:var(--hot);transform:rotate(-2deg)}
+.chip input:focus-visible + span{outline:3px solid var(--uv);outline-offset:2px}
+.field{margin-bottom:1.1rem}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:0 1rem}
+input[type=text],input[type=email],textarea{width:100%;font:inherit;font-size:1rem;color:var(--plum);background:#fff;padding:.8rem 1rem;border:2px solid rgba(58,6,52,.22);border-radius:14px;transition:border-color .15s}
+input:focus,textarea:focus{outline:none;border-color:var(--hot);box-shadow:0 0 0 4px rgba(255,45,149,.2)}
+textarea{min-height:9rem;resize:vertical}
+.hp{position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden}
+.form-foot{display:flex;align-items:center;gap:1rem;flex-wrap:wrap;margin-top:.4rem}
+.btn[disabled]{opacity:.6;cursor:progress}
+.status{margin:1rem 0 0;font-weight:700;min-height:1.6em}
+.status.ok{color:#a3006a}
+.status.err{color:#b4002f}
+
+/* ---------- footer ---------- */
+.footer{position:relative;z-index:1;display:flex;flex-wrap:wrap;justify-content:space-between;gap:.75rem 2rem;padding:2rem var(--gutter) 5.5rem;
+  border-top:2px solid var(--ink);font-size:.95rem}
+.footer p{margin:0}
+.footer a{font-weight:700}
+
+/* ---------- confetti ---------- */
+.confetti{position:fixed;z-index:20;pointer-events:none;width:9px;height:14px;border-radius:2px;background:var(--c);font-style:normal}
+.confetti.star{width:auto;height:auto;background:none;color:var(--c);font-size:22px;line-height:1}
+
+/* ---------- responsive ---------- */
+@media (max-width:860px){
+  .passes{grid-template-columns:1fr;max-width:420px;gap:clamp(10rem,32vh,14rem)}
+  .pass-holder:nth-child(2){margin-top:0;--side:1}
+  /* on small screens the passes swing in from the side instead of dropping, so they never overlap */
+  .pass-holder{--side:-1;transform:translateX(calc((1 - var(--e)) * var(--side) * 95vw)) rotate(calc((1 - var(--e)) * var(--side) * 24deg));transform-origin:50% -20vh}
+  .about-grid,.contact-grid{grid-template-columns:1fr}
+  .photo{max-width:420px}
+}
+@media (max-width:760px){
+  .nav li:not(.keep){display:none}
+  .row2{grid-template-columns:1fr}
+  .scroll-hint{display:none}
+  .clock-time{font-size:1.1rem}
+  .clock-phase{font-size:.75rem}
+  .sticker{width:6.2rem;height:6.2rem;font-size:.9rem;right:-.4rem}
+  .form-card{box-shadow:6px 6px 0 var(--plum)}
+}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .hero,.statement{height:auto}
+  .hero-stage,.statement-stage{position:relative;min-height:100svh}
+  .statement .w{opacity:1}
+  .scroll-hint span{animation:none}
+}
+</style>
+</head>
+<body>
+<canvas id="spots" aria-hidden="true"></canvas>
+
+<header class="nav">
+  <a class="logo" href="#top" aria-label="ZIJDN, naar boven">ZIJDN</a>
+  <nav aria-label="Hoofdmenu">
+    <ul>
+      <li><a href="#wat-ik-doe">Wat ik doe</a></li>
+      <li><a href="#ade">ADE 2026</a></li>
+      <li><a href="#over">Over mij</a></li>
+      <li class="keep"><a class="pill" href="#contact">Contact</a></li>
+    </ul>
+  </nav>
+</header>
+
+<div class="rig" aria-hidden="false">
+  <div class="string"></div>
+  <button class="ball" type="button" aria-label="Discobal. Klik voor een feestje."><canvas></canvas></button>
+</div>
+
+<div class="clock" aria-hidden="true"><span class="clock-time">12:00</span><span class="clock-phase">load-in</span></div>
+
+<main id="top">
+  <!-- 1. Load-in -->
+  <section class="hero" data-pin data-anchor="top" data-ball="0.74,0.42,40|0.62,0.3,60" data-dark="0" data-hour="12" data-phase="load-in">
+    <div class="hero-stage">
+      <h1 class="wordmark" aria-label="ZIJDN">
+        <span style="--dx:-34;--dy:-38;--r:-28" aria-hidden="true">Z</span><span style="--dx:-12;--dy:55;--r:40" aria-hidden="true">I</span><span style="--dx:6;--dy:-60;--r:-34" aria-hidden="true">J</span><span style="--dx:24;--dy:42;--r:22" aria-hidden="true">D</span><span style="--dx:42;--dy:-30;--r:38" aria-hidden="true">N</span>
+      </h1>
+      <div class="hero-copy">
+        <p class="lede">Stage management en artist handling voor festivals, clubs en concerten. Jij zorgt voor de line-up, ik zorg dat het achter de schermen op rolletjes loopt.</p>
+        <div class="btns">
+          <a class="btn btn-hot" href="#contact">Plan een koffietje</a>
+          <a class="btn btn-line" href="#wat-ik-doe">Bekijk wat ik doe</a>
+        </div>
+      </div>
+      <p class="scroll-hint" aria-hidden="true">Scroll, de show begint zo <span>↓</span></p>
+    </div>
+  </section>
+
+  <!-- 2. Soundcheck -->
+  <section class="section services" id="wat-ik-doe" data-ball="0.9,0.17,15|0.84,0.13,16" data-dark="0" data-hour="16.5" data-phase="soundcheck">
+    <div class="wrap">
+      <h2>Van load-in tot de laatste encore</h2>
+      <p class="intro">Onder de naam ZIJDN werk ik als zelfstandige in twee rollen. Je kunt me voor één van de twee boeken, of voor allebei tegelijk.</p>
+
+      <div class="passes">
+        <article class="pass-holder" data-p data-ease="back" style="--strap:var(--hot);--strap-ink:var(--plum)">
+          <span class="strap" aria-hidden="true"></span><span class="clip" aria-hidden="true"></span>
+          <div class="pass" style="--tone:var(--hot);--tone-ink:var(--plum)">
+            <span class="slot" aria-hidden="true"></span>
+            <div class="pass-head"><span class="aaa" aria-hidden="true">AAA</span><small>All access</small></div>
+            <h3>Stage management</h3>
+            <p class="pass-desc">Ik houd het podium, de tijd en alle mensen eromheen bij elkaar.</p>
+            <ul>
+              <li>Running order en tijdschema's bewaken</li>
+              <li>Changeovers strak en veilig laten verlopen</li>
+              <li>Schakelen tussen productie, techniek en artiesten</li>
+              <li>Rustig blijven als het spannend wordt</li>
+            </ul>
+            <div class="barcode" aria-hidden="true"></div>
+            <p class="pass-name">FLOOR VAN DER ZIJDEN</p>
+          </div>
+        </article>
+
+        <article class="pass-holder" data-p data-ease="back" style="--strap:var(--plum);--strap-ink:#ff8fca">
+          <span class="strap" aria-hidden="true"></span><span class="clip" aria-hidden="true"></span>
+          <div class="pass" style="--tone:var(--uv);--tone-ink:#fff">
+            <span class="slot" aria-hidden="true"></span>
+            <div class="pass-head"><span class="aaa" aria-hidden="true">AAA</span><small>Artist area</small></div>
+            <h3>Artist handling</h3>
+            <p class="pass-desc">Artiesten voelen zich welkom en staan op tijd waar ze moeten zijn.</p>
+            <ul>
+              <li>Ontvangst en begeleiding, van aankomst tot vertrek</li>
+              <li>Backstage hosting en hospitality</li>
+              <li>Riders en wensen geregeld voordat iemand erom vraagt</li>
+              <li>Eén vast aanspreekpunt voor artiest en crew</li>
+            </ul>
+            <div class="barcode" aria-hidden="true"></div>
+            <p class="pass-name">FLOOR VAN DER ZIJDEN</p>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. Doors -->
+  <section class="statement" id="statement" data-pin data-ball="0.88,0.22,20|0.5,0.2,28" data-dark="1" data-hour="20" data-phase="deuren open">
+    <div class="statement-stage">
+      <p id="statement-text">Als de lichten uitgaan en de eerste beat valt, is mijn werk eigenlijk al gedaan. Het draaiboek klopt, de artiest staat klaar en niemand merkt hoeveel er geregeld moest worden.</p>
+    </div>
+  </section>
+
+  <!-- 4. Showtime -->
+  <section class="section ade" id="ade" data-p="full" data-ball="0.84,0.2,20|0.84,0.13,16" data-dark="1" data-hour="23.5" data-phase="showtime">
+    <div class="lasers" aria-hidden="true">
+      <i class="beam" style="--a:-52deg;--s:38deg;--c:#ff2d95"></i>
+      <i class="beam" style="--a:-24deg;--s:-30deg;--c:#8a4dff"></i>
+      <i class="beam" style="--a:2deg;--s:26deg;--c:#ffd6ec"></i>
+      <i class="beam" style="--a:26deg;--s:-44deg;--c:#ff2d95"></i>
+      <i class="beam" style="--a:50deg;--s:34deg;--c:#ffb341"></i>
+    </div>
+    <div class="wrap">
+      <h2 class="ade-title">ADE 2026</h2>
+      <p class="intro">Tijdens Amsterdam Dance Event 2026 werkte ik mee aan een rij mooie producties, als stage manager en als backstage host.</p>
+      <ol class="runlist">
+        <li class="run" data-p><span class="run-act">Armin van Buuren B2B Benwal</span><span class="run-venue">Gashouder</span></li>
+        <li class="run" data-p><span class="run-act">EINDER</span><span class="run-venue">Amsterdam</span></li>
+        <li class="run" data-p><span class="run-act">ZeeZout</span><span class="run-venue">Amsterdam</span></li>
+        <li class="run" data-p><span class="run-act">Skepta</span><span class="run-venue">The Loft</span></li>
+        <li class="run" data-p><span class="run-act">Tonno Disko ft. Armand van Helden</span><span class="run-venue">Hemkade</span></li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- 5. Encore -->
+  <section class="section about" id="over" data-ball="0.5,0.16,13|0.84,0.13,16" data-dark="1" data-hour="26" data-phase="encore">
+    <div class="wrap about-grid">
+      <figure class="photo" data-p="full">
+        <img src="/floor.jpg" width="800" height="1422" alt="Floor lacht in de camera, backstage in de Gashouder tijdens ADE, met paarse lasers boven haar." loading="lazy" decoding="async">
+        <span class="sticker" aria-hidden="true">ADE<br>2026</span>
+      </figure>
+      <div class="about-text">
+        <h2>Hoi, ik ben Floor</h2>
+        <p>Na mijn bachelor Facility Management aan de Hanzehogeschool ben ik de evenementenwereld in gerold, en dat ging sneller dan verwacht. Het liefst doe ik het werk dat je niet ziet: coördineren achter de schermen, artiesten begeleiden en zorgen dat alles op rolletjes loopt.</p>
+        <p>Met ZIJDN ga ik nu als zelfstandige verder in de live- en muziekindustrie. Ik heb de smaak goed te pakken en kijk uit naar de volgende productie.</p>
+        <p class="aside">Herkenbaar aan: iets roze en een zwak voor discoballen.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6. Afterparty -->
+  <section class="section contact" id="contact" data-ball="0.5,0.12,13|0.84,0.13,16" data-dark="0" data-hour="28.5" data-phase="afterparty">
+    <div class="wrap contact-grid">
+      <div>
+        <h2>Mijn inbox staat open</h2>
+        <p class="intro">Zoek je ondersteuning bij stage management of artist handling? Of lijkt het je leuk om een koffietje te drinken en ideeën uit te wisselen? Stuur me een bericht.</p>
+        <div class="direct">
+          <p>Liever direct mailen?</p>
+          <a class="mail" href="mailto:info@zijdn.nl">info@zijdn.nl</a>
+          <p class="social"><a href="https://www.linkedin.com/in/floor-van-der-zijden-236260251/" rel="noopener" target="_blank">Floor op LinkedIn</a></p>
+        </div>
+      </div>
+
+      <div class="form-card">
+        <form id="contact-form" action="/api/contact" method="post" novalidate>
+          <fieldset>
+            <legend>Waar kan ik je mee helpen?</legend>
+            <div class="chips">
+              <label class="chip"><input type="radio" name="soort" value="Stage management"><span>Stage management</span></label>
+              <label class="chip"><input type="radio" name="soort" value="Artist handling"><span>Artist handling</span></label>
+              <label class="chip"><input type="radio" name="soort" value="Allebei"><span>Allebei</span></label>
+              <label class="chip"><input type="radio" name="soort" value="Koffie drinken"><span>Koffie drinken</span></label>
+            </div>
+          </fieldset>
+          <div class="row2">
+            <div class="field"><label for="f-naam">Naam</label><input id="f-naam" name="naam" type="text" autocomplete="name" required maxlength="120"></div>
+            <div class="field"><label for="f-email">E-mailadres</label><input id="f-email" name="email" type="email" autocomplete="email" required maxlength="200"></div>
+          </div>
+          <div class="row2">
+            <div class="field"><label for="f-org">Organisatie of evenement <span class="opt">(optioneel)</span></label><input id="f-org" name="organisatie" type="text" autocomplete="organization" maxlength="160"></div>
+            <div class="field"><label for="f-datum">Datum <span class="opt">(optioneel)</span></label><input id="f-datum" name="datum" type="text" placeholder="bijv. 12 juni 2027" maxlength="60"></div>
+          </div>
+          <div class="field"><label for="f-bericht">Bericht</label><textarea id="f-bericht" name="bericht" required maxlength="5000" placeholder="Vertel iets over je evenement of idee"></textarea></div>
+          <div class="hp" aria-hidden="true"><label for="f-website">Laat dit veld leeg</label><input id="f-website" name="website" type="text" tabindex="-1" autocomplete="off"></div>
+          <input type="hidden" name="t" id="f-t">
+          <div class="form-foot"><button class="btn btn-hot" type="submit">Verstuur bericht</button></div>
+          <p class="status" id="form-status" role="status" aria-live="polite"></p>
+        </form>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <p>ZIJDN, stage management en artist handling door Floor van der Zijden</p>
+  <p><a href="mailto:info@zijdn.nl">info@zijdn.nl</a></p>
+  <!-- Zet hier het KvK-nummer neer zodra je het hebt, bijv.: <p>KvK 12345678</p> -->
+  <p>© 2026 ZIJDN</p>
+</footer>
+
+<script>
+(() => {
+  const $ = (s, el = document) => el.querySelector(s);
+  const $$ = (s, el = document) => [...el.querySelectorAll(s)];
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const root = document.documentElement;
+  const clamp = (v, a = 0, b = 1) => Math.min(b, Math.max(a, v));
+  const lerp = (a, b, t) => a + (b - a) * t;
+  const smooth = t => t * t * (3 - 2 * t);
+  const easeOut = t => 1 - Math.pow(1 - t, 3);
+  const easeBack = t => { const c1 = 1.45, c3 = c1 + 1; return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2); };
+  const hash = n => { const x = Math.sin(n * 127.1 + 311.7) * 43758.5453; return x - Math.floor(x); };
+
+  /* ---------- statement: split into words ---------- */
+  const st = $('#statement-text');
+  const words = st.textContent.trim().split(/\s+/);
+  st.textContent = '';
+  const wordEls = words.map(w => { const s = document.createElement('span'); s.className = 'w'; s.textContent = w; st.append(s, ' '); return s; });
+  const wordOp = new Array(wordEls.length).fill(-1);
+
+  /* ---------- elements ---------- */
+  const anchorEls = $$('[data-ball]');
+  const pEls = $$('[data-p]');
+  const pinEls = $$('[data-pin]');
+  const rig = $('.rig'), string = $('.string'), ballBtn = $('.ball'), ballCv = $('.ball canvas'), bctx = ballCv.getContext('2d');
+  const spotsCv = $('#spots'), sctx = spotsCv.getContext('2d');
+  const clockTime = $('.clock-time'), clockPhase = $('.clock-phase');
+  const themeMeta = $('meta[name="theme-color"]');
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const CAP = 0.09; // portion of canvas height used by the cap
+
+  let vw, vh, vmin, anchors = [], maxS = 200;
+
+  function measure() {
+    vw = innerWidth; vh = innerHeight; vmin = Math.min(vw, vh);
+    const mobile = vw < 760;
+    const sy = scrollY;
+    const maxScroll = Math.max(0, document.documentElement.scrollHeight - vh);
+    anchors = anchorEls.map(el => {
+      const parts = el.dataset.ball.split('|');
+      const [x, y, s] = ((mobile && parts[1]) || parts[0]).split(',').map(Number);
+      const r = el.getBoundingClientRect();
+      const top = r.top + sy;
+      let at = el.dataset.anchor === 'top' ? top : top + r.height / 2 - vh / 2;
+      at = clamp(at, 0, maxScroll);
+      return { at, x, y, s: s * vmin / 100, dark: +el.dataset.dark, hour: +el.dataset.hour, phase: el.dataset.phase };
+    }).sort((a, b) => a.at - b.at);
+    maxS = Math.max(...anchors.map(a => a.s));
+    const res = Math.min(900, Math.round(maxS * dpr));
+    ballCv.width = res; ballCv.height = Math.round(res * (1 + CAP));
+    ballBtn.style.width = maxS + 'px';
+    ballBtn.style.height = maxS * (1 + CAP) + 'px';
+    ballBtn.style.left = -maxS / 2 + 'px';
+    spotsCv.width = Math.round(vw * dpr); spotsCv.height = Math.round(vh * dpr);
+  }
+
+  function sample(sy) {
+    const A = anchors;
+    if (sy <= A[0].at) return A[0];
+    for (let i = 0; i < A.length - 1; i++) {
+      const a = A[i], b = A[i + 1];
+      if (sy < b.at) {
+        const raw = (sy - a.at) / ((b.at - a.at) || 1), t = smooth(raw);
+        return { x: lerp(a.x, b.x, t), y: lerp(a.y, b.y, t), s: lerp(a.s, b.s, t), dark: lerp(a.dark, b.dark, t),
+                 hour: lerp(a.hour, b.hour, raw), phase: raw < .5 ? a.phase : b.phase };
+      }
+    }
+    return A[A.length - 1];
+  }
+
+  /* ---------- colours ---------- */
+  const BLUSH = [255, 214, 236], NIGHT = [29, 5, 32], PLUM = [58, 6, 52], LIGHT = [255, 230, 244];
+  const mix = (a, b, t) => `rgb(${a.map((v, i) => Math.round(lerp(v, b[i], t))).join(',')})`;
+  let lastDark = -1;
+  function setDark(d) {
+    d = Math.round(smooth(smooth(clamp(d))) * 200) / 200; // steeper curve: less time in the muddy middle
+    if (d === lastDark) return;
+    lastDark = d;
+    const bg = mix(BLUSH, NIGHT, d);
+    root.style.setProperty('--bg', bg);
+    root.style.setProperty('--ink', mix(PLUM, LIGHT, d));
+    themeMeta.setAttribute('content', bg);
+  }
+
+  /* ---------- disco ball ---------- */
+  const TILT = 0.34, ct = Math.cos(TILT), stl = Math.sin(TILT);
+  const Lraw = [-0.5, 0.62, 0.62], Ll = Math.hypot(...Lraw), L = Lraw.map(v => v / Ll);
+  const proj = (th, ph) => {
+    const x = Math.cos(th) * Math.sin(ph), y = Math.sin(th), z = Math.cos(th) * Math.cos(ph);
+    return [x, y * ct - z * stl, y * stl + z * ct];
+  };
+  function drawBall(rot, time, glow) {
+    const W = ballCv.width, H = ballCv.height, R = W * 0.47, cx = W / 2, cy = H - W / 2;
+    const c = bctx;
+    c.clearRect(0, 0, W, H);
+    // cap
+    const capW = W * 0.13, capTop = 0, capBot = cy - R + W * 0.03;
+    const cg = c.createLinearGradient(cx - capW / 2, 0, cx + capW / 2, 0);
+    cg.addColorStop(0, '#8d8099'); cg.addColorStop(.45, '#f6f1fa'); cg.addColorStop(1, '#a397ae');
+    c.fillStyle = cg; c.beginPath(); c.roundRect(cx - capW / 2, capTop, capW, capBot - capTop, W * 0.02); c.fill();
+    // base sphere
+    const g = c.createRadialGradient(cx - R * .3, cy - R * .35, R * .1, cx, cy, R);
+    g.addColorStop(0, '#5b4867'); g.addColorStop(1, '#170616');
+    c.fillStyle = g; c.beginPath(); c.arc(cx, cy, R, 0, Math.PI * 2); c.fill();
+    // facets
+    const rows = 17, gap = 0.07;
+    for (let i = 0; i < rows; i++) {
+      const t1 = -Math.PI / 2 + Math.PI * i / rows, t2 = t1 + Math.PI / rows, tm = (t1 + t2) / 2;
+      const cols = Math.max(5, Math.round(rows * 2 * Math.cos(tm)));
+      const dt = (t2 - t1) * gap;
+      for (let j = 0; j < cols; j++) {
+        const p1 = rot + Math.PI * 2 * j / cols, p2 = p1 + Math.PI * 2 / cols, pm = (p1 + p2) / 2, dp = (p2 - p1) * gap;
+        const n = proj(tm, pm);
+        if (n[2] < 0.03) continue;
+        const diff = Math.max(0, n[0] * L[0] + n[1] * L[1] + n[2] * L[2]);
+        const rz = 2 * diff * n[2] - L[2];
+        const spec = Math.pow(Math.max(0, rz), 26);
+        const seed = hash(i * 131 + j * 7.3);
+        const tw = seed > 0.92 ? Math.max(0, Math.sin(time * 3.2 + seed * 60)) ** 6 : 0;
+        let h = 300, s = 7;
+        if (seed < 0.16) { h = 328; s = 92; } else if (seed < 0.22) { h = 268; s = 70; }
+        let l = 16 + 64 * diff * (0.7 + 0.5 * seed) * Math.pow(n[2], 0.35);
+        l = Math.min(97, l + spec * 70 + tw * 55 + glow * 18);
+        c.fillStyle = `hsl(${h} ${s}% ${l}%)`;
+        c.beginPath();
+        const pts = [[t1 + dt, p1 + dp], [t1 + dt, p2 - dp], [t2 - dt, p2 - dp], [t2 - dt, p1 + dp]];
+        for (let k = 0; k < 4; k++) {
+          const v = proj(pts[k][0], pts[k][1]);
+          const X = cx + v[0] * R, Y = cy - v[1] * R;
+          k ? c.lineTo(X, Y) : c.moveTo(X, Y);
+        }
+        c.closePath(); c.fill();
+      }
+    }
+    // rim shade
+    const g2 = c.createRadialGradient(cx - R * .15, cy - R * .2, R * .5, cx, cy, R * 1.02);
+    g2.addColorStop(0, 'rgba(23,6,22,0)'); g2.addColorStop(1, 'rgba(23,6,22,.55)');
+    c.fillStyle = g2; c.beginPath(); c.arc(cx, cy, R, 0, Math.PI * 2); c.fill();
+    // glint
+    const gx = cx - R * .42, gy = cy - R * .45, gs = R * (.16 + .07 * Math.sin(time * 2.4));
+    c.save(); c.translate(gx, gy); c.fillStyle = 'rgba(255,255,255,.95)';
+    c.beginPath();
+    for (let k = 0; k < 8; k++) { const a = k * Math.PI / 4, r = k % 2 ? gs * .16 : gs; c.lineTo(Math.cos(a) * r, Math.sin(a) * r); }
+    c.closePath(); c.fill(); c.restore();
+  }
+
+  /* ---------- light spots on the walls ---------- */
+  const SPOTS = Array.from({ length: 72 }, (_, i) => ({ b: hash(i + 1) * Math.PI * 2, a: 0.04 + hash(i + 77) * 0.94, r: 1.6 + hash(i + 300) * 3.6, c: hash(i + 900), ph: hash(i + 5) * 6.28 }));
+  const SPOT_COLS = [[255, 255, 255], [255, 77, 170], [170, 120, 255]];
+  function drawSpots(rot, d, time, party) {
+    const W = spotsCv.width, H = spotsCv.height, c = sctx;
+    c.clearRect(0, 0, W, H);
+    const base = 0.16 + 0.74 * d + party * 0.25;
+    c.globalCompositeOperation = d > 0.5 ? 'lighter' : 'source-over';
+    const scale = dpr * (vmin / 700) * (1 + party * 0.7);
+    for (const s of SPOTS) {
+      const ang = ((s.b + rot * 0.55) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
+      const x = (ang / (Math.PI * 2)) * W * 1.3 - W * 0.15;
+      const y = s.a * H;
+      const tw = reduce ? 0.8 : 0.55 + 0.45 * Math.sin(time * 2 + s.ph);
+      let col = SPOT_COLS[s.c < .45 ? 0 : s.c < .8 ? 1 : 2];
+      if (party) { const hue = (s.c * 360 + time * 160) % 360; col = null; c.fillStyle = `hsla(${hue},100%,70%,${base * tw * 0.3})`; }
+      else if (d < 0.5 && col === SPOT_COLS[0]) col = [255, 255, 255];
+      const r = s.r * scale;
+      const fill = a => col ? `rgba(${col[0]},${col[1]},${col[2]},${a})` : null;
+      if (col) c.fillStyle = fill(base * tw * 0.22);
+      c.beginPath(); c.arc(x, y, r * 3, 0, Math.PI * 2); c.fill();
+      if (col) c.fillStyle = fill(base * tw * 0.9); else c.fillStyle = `hsla(${(s.c * 360 + time * 160) % 360},100%,75%,${base * tw})`;
+      c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill();
+    }
+    c.globalCompositeOperation = 'source-over';
+  }
+
+  /* ---------- scroll progress on elements ---------- */
+  function updateProgress() {
+    for (const el of pEls) {
+      const r = el.getBoundingClientRect();
+      if (r.bottom < -vh || r.top > vh * 2) continue;
+      const p = el.dataset.p === 'full' ? clamp((vh - r.top) / (vh + r.height)) : clamp((vh * 0.95 - r.top) / (vh * 0.6));
+      const e = el.dataset.ease === 'back' ? easeBack(p) : easeOut(p);
+      el.style.setProperty('--p', p.toFixed(4));
+      el.style.setProperty('--e', e.toFixed(4));
+    }
+    for (const el of pinEls) {
+      const r = el.getBoundingClientRect();
+      const pp = clamp(-r.top / Math.max(1, r.height - vh));
+      el.style.setProperty('--pp', pp.toFixed(4));
+      if (el.id === 'statement') lightWords(pp);
+    }
+  }
+  function lightWords(pp) {
+    const n = wordEls.length, x = clamp(pp * 1.25) * (n + 2);
+    for (let i = 0; i < n; i++) {
+      const o = Math.round(clamp(x - i, 0.14, 1) * 100) / 100;
+      if (o !== wordOp[i]) { wordOp[i] = o; wordEls[i].style.opacity = o; }
+    }
+  }
+
+  /* ---------- party mode ---------- */
+  let partyT = 0, cur = { x: .7, y: .4, s: 100 }, ballPos = [0, 0];
+  const CONF = ['#ff2d95', '#8a4dff', '#ffb341', '#ffffff', '#ffd6ec'];
+  function burst(x, y, count = 44) {
+    if (reduce) return;
+    for (let i = 0; i < count; i++) {
+      const el = document.createElement('i');
+      const star = i % 3 === 0;
+      el.className = 'confetti' + (star ? ' star' : '');
+      if (star) el.textContent = '✦';
+      el.style.setProperty('--c', CONF[i % CONF.length]);
+      el.style.left = x + 'px'; el.style.top = y + 'px';
+      document.body.append(el);
+      const ang = Math.random() * Math.PI * 2, dist = 90 + Math.random() * 260;
+      const dx = Math.cos(ang) * dist, dy = Math.sin(ang) * dist * .7 + 160 + Math.random() * 160;
+      el.animate([
+        { transform: 'translate(-50%,-50%) rotate(0deg)', opacity: 1 },
+        { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) rotate(${(Math.random() * 2 - 1) * 720}deg)`, opacity: 0 }
+      ], { duration: 1100 + Math.random() * 900, easing: 'cubic-bezier(.15,.75,.35,1)' }).onfinish = () => el.remove();
+    }
+  }
+  function party(x, y) { partyT = 3.2; burst(x ?? ballPos[0], y ?? ballPos[1]); }
+  ballBtn.addEventListener('click', () => party());
+
+  /* ---------- main loop ---------- */
+  let rot = 0, last = performance.now(), lastSy = scrollY, th = 0, thv = 0, lastClock = '', lastPhase = '', time = 0;
+  function frame(now) {
+    const dt = Math.min(0.05, (now - last) / 1000); last = now; time += dt;
+    const sy = scrollY;
+    const vps = (sy - lastSy) / Math.max(dt, 1e-3); lastSy = sy;
+    partyT = Math.max(0, partyT - dt);
+    const party = clamp(partyT / 0.8);
+
+    const st = sample(sy);
+    cur = st;
+    setDark(st.dark);
+    if (!reduce) updateProgress();
+
+    // spin faster while scrolling; pendulum swing from scroll velocity
+    if (!reduce) {
+      rot += dt * (0.45 + Math.min(Math.abs(vps), 4000) * 0.0011 + party * 5);
+      const acc = -22 * th - 3.2 * thv - clamp(vps, -5000, 5000) * 0.0011;
+      thv += acc * dt; th = clamp(th + thv * dt, -0.32, 0.32);
+    } else if (party) rot += dt * 3;
+
+    const x = st.x * vw, y = st.y * vh, s = st.s;
+    const Ly = Math.max(6, y - s * (0.5 + CAP));
+    rig.style.transform = `translate(${x}px,0) rotate(${th}rad)`;
+    string.style.height = (Ly + 2) + 'px';
+    ballBtn.style.top = Ly + 'px';
+    ballBtn.style.transform = `scale(${s / maxS})`;
+    ballPos = [x + Math.sin(th) * (Ly + s / 2), Math.cos(th) * (Ly + s * (.5 + CAP))];
+
+    drawBall(rot, time, party);
+    drawSpots(rot, st.dark, time, party);
+
+    // show clock
+    const h = st.hour, hh = Math.floor(h) % 24, mm = Math.floor((h % 1) * 60);
+    const txt = String(hh).padStart(2, '0') + ':' + String(mm).padStart(2, '0');
+    if (txt !== lastClock) { clockTime.textContent = txt; lastClock = txt; }
+    if (st.phase !== lastPhase) { clockPhase.textContent = st.phase; lastPhase = st.phase; }
+
+    requestAnimationFrame(frame);
+  }
+
+  measure();
+  if (reduce) wordEls.forEach(w => (w.style.opacity = 1));
+  addEventListener('resize', () => { measure(); });
+  addEventListener('load', measure);
+  if (document.fonts) document.fonts.ready.then(measure);
+  requestAnimationFrame(frame);
+
+  /* ---------- contact form ---------- */
+  const form = $('#contact-form'), status = $('#form-status'), tField = $('#f-t');
+  tField.value = Date.now();
+  const setStatus = (kind, msg, withMail) => {
+    status.className = 'status ' + kind;
+    status.textContent = msg;
+    if (withMail) {
+      status.append(' Mail me anders direct op ');
+      const a = document.createElement('a'); a.href = 'mailto:info@zijdn.nl'; a.textContent = 'info@zijdn.nl';
+      status.append(a, '.');
+    }
+  };
+  const params = new URLSearchParams(location.search);
+  if (params.has('verzonden')) setStatus('ok', 'Verstuurd! Je hoort zo snel mogelijk van me.');
+  if (params.has('fout')) setStatus('err', 'Versturen lukte niet.', true);
+
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    if (!form.checkValidity()) {
+      const bad = form.querySelector(':invalid');
+      setStatus('err', bad && bad.type === 'email' ? 'Vul een geldig e-mailadres in.' : 'Vul je naam, e-mailadres en een bericht in.');
+      bad && bad.focus();
+      return;
+    }
+    const btn = form.querySelector('button[type=submit]');
+    btn.disabled = true; btn.textContent = 'Versturen…'; setStatus('', '');
+    try {
+      const res = await fetch(form.action, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify(Object.fromEntries(new FormData(form)))
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.ok) throw new Error(data.message || 'Versturen lukte niet.');
+      form.reset(); tField.value = Date.now();
+      setStatus('ok', 'Verstuurd! Je hoort zo snel mogelijk van me.');
+      const r = btn.getBoundingClientRect();
+      party(r.left + r.width / 2, r.top);
+    } catch (err) {
+      setStatus('err', err.message || 'Versturen lukte niet.', true);
+    } finally {
+      btn.disabled = false; btn.textContent = 'Verstuur bericht';
+    }
+  });
+})();
+</script>
+</body>
+</html>

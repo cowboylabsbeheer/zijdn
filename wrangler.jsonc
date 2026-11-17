@@ -1,0 +1,37 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "zijdn",
+  "main": "src/index.js",
+  // Laat hier gerust de datum staan die al in jouw wrangler-bestand stond.
+  "compatibility_date": "2026-11-01",
+
+  // De site zelf: alles in public/ wordt als statisch bestand geserveerd.
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS",
+    "not_found_handling": "404-page"
+  },
+
+  // Contactformulier -> mail via Cloudflare Email Routing.
+  // destination_address MOET een geverifieerd adres zijn in Email Routing
+  // (de echte inbox waar alle @zijdn.nl-mail naartoe gaat, bijv. een Gmail-adres).
+  "send_email": [
+    {
+      "name": "MAIL",
+      "destination_address": "VUL-HIER-DE-INBOX-IN@gmail.com"
+    }
+  ],
+
+  "vars": {
+    "MAIL_FROM": "website@zijdn.nl",
+    "MAIL_TO": "VUL-HIER-DE-INBOX-IN@gmail.com"
+  },
+
+  // Koppel het domein (haal de // weg als zijdn.nl in je Cloudflare-account staat).
+  // "routes": [
+  //   { "pattern": "zijdn.nl", "custom_domain": true },
+  //   { "pattern": "www.zijdn.nl", "custom_domain": true }
+  // ],
+
+  "observability": { "enabled": true }
+}
